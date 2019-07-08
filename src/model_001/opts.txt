@@ -1,0 +1,1 @@
+Namespace(batch_size=5, cuda=True, datadir='/home/amsl/datasets/Cityscapes/', decoder=False, epochs_save=0, height=512, iouTrain=True, iouVal=True, model='lednet', num_epochs=300, num_workers=4, port=8097, pretrainedEncoder=None, resume=False, savedir='model_001', state=None, steps_loss=50, steps_plot=50, visualize=False)

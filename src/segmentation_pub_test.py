@@ -7,7 +7,6 @@ from cv_bridge import CvBridge, CvBridgeError
 import matplotlib.pyplot as plt
 
 from PIL import Image as PIL_Image
-from argparse import ArgumentParser
 import cv2
 
 from torch.autograd import Variable
@@ -19,8 +18,6 @@ from transform import Relabel, ToLabel, Colorize
 
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import Twist
-from std_msgs.msg import String
 from sensor_msgs.msg import Image, CompressedImage, CameraInfo
 
 NUM_CLASSES = 20
@@ -41,11 +38,11 @@ class Segmentation(Node):
         super().__init__('segmentation_publisher')
         self.bridge = CvBridge()
         self.pub_seg = self.create_publisher(Image, '/recognition/segmentation')
-        #self.pub_seg = self.create_publisher(Image, '/amsl/demo/segmentation')
+        ##self.pub_seg = self.create_publisher(Image, '/amsl/demo/segmentation')
         self.sub = self.create_subscription(CompressedImage, '/usb_cam/image_raw/compressed', self.callback)
-        #self.sub = self.create_subscription(Image, '/cam/custom_camera/image_raw', self.callback)
 
-        self.weightspath = "/model_001/model_best.pth"
+        #Please fix "weightspath" if you use other workspace. 
+        self.weightspath = '/home/amsl/ros2_ws/segmentation_publisher/src/model_001/model_best.pth'
         self.model = Net(NUM_CLASSES)
         self.model = torch.nn.DataParallel(self.model)
 
@@ -55,16 +52,23 @@ class Segmentation(Node):
 
         self.model.eval()
         print("Ready")
+        self.count = 0
 
     def callback(self, oimg):
 
         try:
+            #if you want to save images and labels ,please uncomment following codes(No.1 to No.4).
+            #NO.1 #write_image_name = "image_" + str(self.count) + ".jpg"
+            #No.2 #write_label_name = "label_" + str(self.count) + ".jpg"
+
             oimg_b = bytes(oimg.data)
             np_arr = np.fromstring(oimg_b, np.uint8)
             img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-            #img = self.bridge.imgmsg_to_cv2(oimg, "bgr8")
 
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+            #No.3 #cv2.imwrite("/home/amsl/images/output/seg_pub/image/" + write_image_name, img)
+            
             img_size = img.shape
             image = PIL_Image.fromarray(img)
             image = image.resize((1024,512),PIL_Image.NEAREST)
@@ -84,10 +88,17 @@ class Segmentation(Node):
             label_pub = ToPILImage()(label_color)
             label_pub = label_pub.resize((img_size[1],img_size[0]),PIL_Image.NEAREST)
             label_pub = np.asarray(label_pub)
-            plt.imshow(label_pub)
-            plt.pause(0.001)
+            
+            #show label.
+            #plt.imshow(label_pub)
+            #plt.pause(0.001)
+            
+            #No.4 #cv2.imwrite("/home/amsl/images/output/seg_pub/label/" + write_label_name, label_pub)
+
             self.pub_seg.publish(self.bridge.cv2_to_imgmsg(label_pub, "bgr8"))
-     
+            print("published") 
+            self.count += 1
+        
         except CvBridgeError as e:
             print(e)
 

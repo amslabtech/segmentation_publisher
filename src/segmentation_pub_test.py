@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 import os
 import importlib
 import sys
@@ -8,12 +7,13 @@ import matplotlib.pyplot as plt
 
 from PIL import Image as PIL_Image
 import cv2
+from cv_bridge import CvBridge, CvBridgeError
 
+import torch
 from torch.autograd import Variable
 from torchvision.transforms import ToTensor, ToPILImage
 
 from lednet import Net
-
 from transform import Relabel, ToLabel, Colorize
 
 import rclpy

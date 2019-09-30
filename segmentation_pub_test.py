@@ -37,7 +37,7 @@ class Segmentation(Node):
     def __init__(self):
         super().__init__('segmentation_publisher')
         self.bridge = CvBridge()
-        self.pub_seg = self.create_publisher(Image, '/recognition/segmentation')
+        self.pub_seg = self.create_publisher(Image, '/LEDNet/segmented_image')
         ##self.pub_seg = self.create_publisher(Image, '/amsl/demo/segmentation')
         self.sub = self.create_subscription(CompressedImage, '/usb_cam/image_raw/compressed', self.callback)
 
@@ -58,11 +58,8 @@ class Segmentation(Node):
 
         try:
             #if you want to save images and labels ,please uncomment following codes(No.1 to No.4).
-            #NO.1 
-            write_image_name = "image_" + str(self.count) + ".jpg"
-            
-            #No.2 
-            write_label_name = "label_" + str(self.count) + ".jpg"
+            #NO.1 #write_image_name = "image_" + str(self.count) + ".jpg"
+            #No.2 #write_label_name = "label_" + str(self.count) + ".jpg"
 
             oimg_b = bytes(oimg.data)
             np_arr = np.fromstring(oimg_b, np.uint8)
@@ -70,16 +67,11 @@ class Segmentation(Node):
 
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-            #No.3 
-            #cv2.imwrite("/home/amsl/images/output/seg_pub_2/image/" + write_image_name, img)
+            #No.3 #cv2.imwrite("/home/amsl/images/output/seg_pub/image/" + write_image_name, img)
             
+            img_size = img.shape
             image = PIL_Image.fromarray(img)
-            #image = image.crop((0, 120, 640, 480))
-            image = image.crop((0, 10, 640, 330))
-            #image = image.resize((1024,512),PIL_Image.NEAREST)
             image = image.resize((1024,512),PIL_Image.NEAREST)
-
-            #img_size = image.shape
 
             image = ToTensor()(image)
             image = torch.Tensor(np.array([image.numpy()]))
@@ -94,16 +86,14 @@ class Segmentation(Node):
             label = output_image[0].max(0)[1].byte().cpu().data
             label_color = Colorize()(label.unsqueeze(0))
             label_pub = ToPILImage()(label_color)
-            #label_pub = label_pub.resize((1024, 512),PIL_Image.NEAREST)
-            #label_pub = label_pub.resize((1024, 512),PIL_Image.LANCZOS)
+            label_pub = label_pub.resize((img_size[1],img_size[0]),PIL_Image.NEAREST)
             label_pub = np.asarray(label_pub)
             
             #show label.
             #plt.imshow(label_pub)
             #plt.pause(0.001)
             
-            #No.4 
-            #cv2.imwrite("/home/amsl/images/output/seg_pub_2/label/" + write_label_name, label_pub)
+            #No.4 #cv2.imwrite("/home/amsl/images/output/seg_pub/label/" + write_label_name, label_pub)
 
             self.pub_seg.publish(self.bridge.cv2_to_imgmsg(label_pub, "bgr8"))
             print("published") 

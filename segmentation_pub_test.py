@@ -95,7 +95,8 @@ class Segmentation(Node):
             
             #No.4 #cv2.imwrite("/home/amsl/images/output/seg_pub/label/" + write_label_name, label_pub)
 
-            self.pub_seg.publish(self.bridge.cv2_to_imgmsg(label_pub, "bgr8"))
+            #self.pub_seg.publish(self.bridge.cv2_to_imgmsg(label_pub, "bgr8"))
+            self.pub_seg.publish(self.bridge.cv2_to_imgmsg(label_pub, "rgb8"))
             print("published") 
             self.count += 1
         

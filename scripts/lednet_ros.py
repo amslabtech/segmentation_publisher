@@ -123,6 +123,12 @@ class SemanticSegmentation:
             if not self.use_subscribed_images_stamp:
                     pub_seg_image.header.stamp = rospy.get_rostime()
             self.segmented_image_pub.publish(pub_seg_image)
+            masked_image = cv2.addWeighted(cv_image, 0.5, label_color, 0.5, 0)
+            pub_masked_image = CvBridge().cv2_to_imgmsg(masked_image, "rgb8")
+            pub_masked_image.header = data.header
+            if not self.use_subscribed_images_stamp:
+                pub_masked_image.header.stamp = rospy.get_rostime()
+            self.masked_image_pub.publish(pub_masked_image)
 
             print('callback time: {0}'.format(time.time() - start) + '[s]')
         except CvBridgeError as e:

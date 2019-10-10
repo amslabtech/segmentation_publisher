@@ -74,11 +74,13 @@ class SemanticSegmentation:
         pretrained_dict = torch.load(self.WEIGHT_PATH)
         # print(pretrained_dict)
         pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
-        print(pretrained_dict)
+        # print(pretrained_dict)
         model_dict.update(pretrained_dict)
         self.model.load_state_dict(model_dict)
 
         self.model.eval()
+
+        self.color = get_cityscapes_color()
         print("=== lednet_ros ===")
         print("waiting for image...")
 
@@ -105,8 +107,8 @@ class SemanticSegmentation:
             label = output_image[0].max(0)[1].byte().cpu().data
             # print(label.shape)
             # print(label)
-            # label_color = Colorize()(label.unsqueeze(0))
-            label_color = get_cityscapes_color()[label]
+            print('label image time: {0}'.format(time.time() - start) + '[s]')
+            label_color = self.color[label]
             print('colorize time: {0}'.format(time.time() - start) + '[s]')
             # print(label_color.shape)
 

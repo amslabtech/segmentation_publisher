@@ -63,6 +63,9 @@ class SemanticSegmentation:
         if rospy.has_param("WEIGHT_PATH"):
             self.WEIGHT_PATH = rospy.get_param("WEIGHT_PATH")
         print(self.WEIGHT_PATH)
+        self.ENABLE_SKIP = True
+        if rospy.has_param("ENABLE_SKIP"):
+            self.WEIGHT_PATH = rospy.get_param("ENABLE_SKIP")
 
         self.CLASS_NUM = 20
         self.model = Net(self.CLASS_NUM)
@@ -83,9 +86,16 @@ class SemanticSegmentation:
         self.color = get_cityscapes_color()
         print("=== lednet_ros ===")
         print("waiting for image...")
+        self.skip = False
 
     def image_callback(self, data):
         try:
+            if self.ENABLE_SKIP:
+                if self.skip is not True:
+                    self.skip = True
+                else:
+                    self.skip = False
+                    return 0
             start = time.time()
             print("=== callback ===")
             cv_image = CvBridge().imgmsg_to_cv2(data, "bgr8")

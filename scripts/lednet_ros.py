@@ -58,11 +58,26 @@ class SemanticSegmentation:
 
         self.use_subscribed_images_stamp = True
         if rospy.has_param("USE_SUBSCRIBED_IMAGES_STAMP"):
-                self.use_subscribed_images_stamp = rospy.get_param("USE_SUBSCRIBED_IMAGES_STAMP")
+            self.use_subscribed_images_stamp = rospy.get_param("USE_SUBSCRIBED_IMAGES_STAMP")
+        self.WEIGHT_PATH = os.path.join(os.path.dirname(__file__), "model.pth")
+        if rospy.has_param("WEIGHT_PATH"):
+            self.WEIGHT_PATH = rospy.get_param("WEIGHT_PATH")
+        print(self.WEIGHT_PATH)
 
         self.CLASS_NUM = 20
         self.model = Net(self.CLASS_NUM)
+        self.model = torch.nn.DataParallel(self.model)
         self.model = self.model.cuda()
+
+        model_dict = self.model.state_dict()
+        # print(model_dict)
+        pretrained_dict = torch.load(self.WEIGHT_PATH)
+        # print(pretrained_dict)
+        pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+        print(pretrained_dict)
+        model_dict.update(pretrained_dict)
+        self.model.load_state_dict(model_dict)
+
         self.model.eval()
         print("=== lednet_ros ===")
         print("waiting for image...")
@@ -78,26 +93,31 @@ class SemanticSegmentation:
             image = torch.Tensor(np.array([image.numpy()]))
             input_image = Variable(image)
             input_image = input_image.cuda()
+            print('input image shape')
             print(input_image.shape)
 
             with torch.no_grad():
                 output_image = self.model(input_image)
                 print('inference time: {0}'.format(time.time() - start) + '[s]')
 
-            print(output_image.shape)
+            # print(output_image.shape)
 
             label = output_image[0].max(0)[1].byte().cpu().data
-            print(label.shape)
+            # print(label.shape)
             # print(label)
             # label_color = Colorize()(label.unsqueeze(0))
             label_color = get_cityscapes_color()[label]
             print('colorize time: {0}'.format(time.time() - start) + '[s]')
-            print(label_color.shape)
+            # print(label_color.shape)
 
             label_color = np.asarray(ToPILImage()(label_color))
+            print('segmented image shape')
             print(label_color.shape)
-            print(label_color.dtype)
+            # print(label_color.dtype)
 
+            label_color = cv2.resize(label_color, cv_image.shape[:2][::-1])
+            print('output image shape')
+            print(label_color.shape)
             pub_seg_image = CvBridge().cv2_to_imgmsg(label_color, "rgb8")
             pub_seg_image.header = data.header
             if not self.use_subscribed_images_stamp:
